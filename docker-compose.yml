@@ -1,0 +1,19 @@
+# Minimaler Betrieb mit Docker. Die Seite lauscht auf Port 3000; davor gehört
+# ein Reverse Proxy mit HTTPS (Caddy, Traefik, nginx), siehe README.
+services:
+  buchung:
+    build: .
+    image: buchungstool:latest
+    container_name: buchungstool
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: "file:/data/buchung.db"
+    env_file:
+      - buchung.env
+    volumes:
+      - buchung_data:/data
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  buchung_data:
