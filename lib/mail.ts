@@ -24,6 +24,9 @@ function transporter() {
     host: process.env.MAIL_SMTP_HOST ?? "localhost",
     port: Number(process.env.MAIL_SMTP_PORT ?? 465),
     secure: Number(process.env.MAIL_SMTP_PORT ?? 465) === 465,
+    // Auf 587 muss die Verbindung verschlüsselt werden, sonst ginge das Passwort
+    // im Klartext über die Leitung, falls der Server kein STARTTLS anbietet.
+    requireTLS: Number(process.env.MAIL_SMTP_PORT ?? 465) === 587,
     auth: { user, pass },
   });
 }

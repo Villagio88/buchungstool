@@ -1,26 +1,43 @@
 # Buchungstool
 
-[English version](README.en.md)
+[English version](README.en.md) · [CI](https://github.com/Villagio88/buchungstool/actions) · Lizenz AGPL-3.0
 
-Eine selbst gehostete Seite für Terminbuchungen, die **mehrere Kalender verschiedener
-Anbieter zugleich** berücksichtigt. Gratis, Open Source, ohne Konto bei einem Dienst.
+Eine selbst gehostete Seite für Terminbuchungen, die die Verfügbarkeit aus **mehreren
+Kalendern verschiedener Anbieter zugleich** liest, über deren ICS-Links. Ohne Konto bei
+einem Buchungsdienst, ohne Zugriff auf Postfächer, mit Daten auf dem eigenen Server.
 
-## Das Problem
+![Buchungsseite mit Monatskalender und empfohlenen Zeiten](docs/screenshot.png)
 
-Wer privat Proton Calendar nutzt und geschäftlich Microsoft 365, hat ein Problem mit
-Buchungsdiensten. Calendly, TidyCal, Microsoft Bookings und ähnliche Dienste verbinden
-sich mit Google oder Microsoft, mit Proton aber nicht, und meist nur mit einem Konto pro
-Anbieter. Die Folge: Gäste buchen Zeiten, die im anderen Kalender längst belegt sind.
+## Wofür es gedacht ist
 
-## Die Idee
+Für Leute, deren Termine in Kalendern liegen, die sich nicht miteinander verbinden lassen:
+privat Proton Calendar, geschäftlich Microsoft 365, dazu vielleicht ein Kalender einer
+Schule oder eines Vereins. Die bekannten Buchungsdienste (Calendly, TidyCal, Microsoft
+Bookings) verbinden sich per Anmeldung mit Google, Microsoft oder Apple. Proton bietet
+weder CalDAV noch eine API, und viele Organisationen erlauben keine Verbindung eines
+fremden Dienstes mit ihrem Microsoft-365-Konto.
 
-Fast jeder Kalender lässt sich als **ICS-Link** (iCal-Abo) freigeben: Proton, Microsoft
-365 und Outlook, Google, iCloud, Nextcloud, Fastmail und viele mehr. Das Buchungstool liest
-beliebig viele solcher Links und zählt eine Zeit nur als frei, wenn sie in **allen**
-Kalendern frei ist. Es braucht keinen Zugriff auf die Konten, nur die Leselinks.
+Fast jeder Kalender lässt sich aber als **ICS-Link** freigeben, oft auch nur mit «belegt».
+Das Buchungstool liest beliebig viele solcher Links und bietet eine Zeit nur an, wenn sie
+in allen frei ist. Gäste sehen ausschliesslich frei oder belegt; Titel, Orte und
+Teilnehmer verlassen den Server nie.
 
-Gäste sehen ausschliesslich frei oder belegt. Titel, Orte und Teilnehmer verlassen den
-Server nie.
+### Ehrliche Einordnung
+
+Die Idee ist nicht einzigartig, und das soll niemand erst nach der Installation merken:
+
+| Werkzeug | ICS-Links als Quelle | Selbst hosten | Lizenz | Unterschied |
+|---|---|---|---|---|
+| **Buchungstool** | ja, beliebig viele | ja (Docker) | AGPL-3.0 | klein, eine Person, mehrere Rollen mit eigener Zieladresse, keine Konten |
+| [Tymeslot](https://tymeslot.app) | ja | ja (Docker), auch gehostet | AGPL-3.0 | grösserer Funktionsumfang, Benutzerkonten |
+| [Cal.diy](https://github.com/calcom/cal.diy) (früher Cal.com) | ja, App «ICS Feed» | ja, aufwendig | MIT | sehr umfangreich, für Teams; Selbsthosten aufwendig |
+| [Proton Booking Pages](https://proton.me/support/calendar-appointment-scheduling) | Proton-Kalender | nein | proprietär | seit April 2026 in Proton enthalten; ideal, wenn alles in Proton liegt |
+| Calendly, TidyCal, Microsoft Bookings | nein (Anmeldung bei Google, Microsoft, Apple) | nein | proprietär | ausgereift, aber ohne Proton und mit Daten beim Anbieter |
+
+Stand Oktober 2026, ohne Gewähr. Wer nur Proton nutzt, ist mit Protons Buchungsseiten
+besser bedient. Wer viele Funktionen und Konten braucht, mit Tymeslot. Das Buchungstool
+ist für den Fall gebaut, dass **eine Person** Termine über **mehrere Anbieter hinweg**
+anbieten will und dabei möglichst wenig Software betreiben möchte.
 
 ## Was es kann
 
@@ -29,41 +46,38 @@ Server nie.
 - **Mindestabstand je Kalender**, etwa 30 Minuten zu privaten Terminen mit Anfahrt und
   5 Minuten zu Besprechungen im Haus.
 - **Bereiche** mit eigener Zieladresse, etwa «Beratung» an die Geschäftsadresse und
-  «Privat» an die private. Die Einladung landet so direkt im richtigen Kalender. Jeder
-  Bereich hat einen kurzen Link (`/beratung`) und kann eine eigene Akzentfarbe und ein Logo
-  tragen. Bereiche lassen sich aus der öffentlichen Auswahl ausblenden und sind dann nur
-  über ihren Link erreichbar.
-- **Freie Dauer**: der Gast wählt Tag, Beginn und Ende selbst. Angeboten wird nur, was ab
-  der gewählten Startzeit tatsächlich hineinpasst.
-- **Empfohlene Zeiten**, die den Tag nicht zerstückeln (Tagesbeginn, Anschluss an
-  bestehende Termine, Mittag, Tagesende), dazu ein **Wochenmuster** je Bereich
-  (zum Beispiel «Dienstag, Donnerstag vormittags»).
-- **Randzeiten auf Anfrage**: mit `?anfrage=1` werden auch Zeiten ausserhalb der Bürozeit
-  buchbar, deutlich markiert in Mail und Kalendertitel.
-- **Echte Kalendereinladung** (ICS, `METHOD:REQUEST`) an den Inhaber und als Bestätigung
-  an den Gast, über ein beliebiges SMTP-Konto.
-- **Absage per Link** für Gast und Inhaber (je ein eigener Link), mit `METHOD:CANCEL`: der Termin verschwindet
-  von selbst aus den Kalendern, und die Zeit wird wieder frei.
-- **Ferien als Markierung** im Monatskalender, ohne etwas zu sperren.
-- **Schutz vor Doppelbuchungen**: jede Buchung belegt Zeiteinheiten mit eindeutigem
-  Schlüssel in der Datenbank, und ist ein Kalender nicht erreichbar, wird gar nicht gebucht.
-- **Missbrauchsschutz**: Höchstzahl Buchungen je Mailadresse und IP-Adresse, verstecktes
-  Feld gegen Bots, Bereinigung aller Eingaben, Sicherheitskopfzeilen (CSP, HSTS).
-- **Datenschutzfreundlich**: keine Cookies, keine fremden Schriften oder Skripte, keine
-  Statistik. Impressum und Datenschutzerklärung werden aus der Konfiguration erzeugt.
+  «Privat» an die private, damit die Einladung im richtigen Kalender landet. Jeder Bereich
+  hat einen kurzen Link (`/beratung`), eine Akzentfarbe und auf Wunsch ein Logo, und lässt
+  sich aus der öffentlichen Auswahl ausblenden.
+- **Freie Dauer**: der Gast wählt Tag, Beginn und Ende; angeboten wird nur, was hineinpasst.
+- **Empfohlene Zeiten**, die den Tag nicht zerstückeln, und ein **Wochenmuster** je Bereich.
+- **Randzeiten auf Anfrage** über `?anfrage=1`, deutlich markiert.
+- **Echte Kalendereinladung** (ICS) an den Inhaber und an den Gast, über ein beliebiges
+  SMTP-Konto; Zeiten in UTC, damit sie in jeder Zeitzone stimmen.
+- **Absage per Link**, je ein eigener Link für Gast und Inhaber; der Termin verschwindet
+  dank `METHOD:CANCEL` von selbst aus beiden Kalendern.
+- **Keine Doppelbuchung**: jede Buchung belegt Fünf-Minuten-Einheiten mit eindeutigem
+  Schlüssel; ist ein Kalender nicht erreichbar, wird nicht gebucht.
+- **Datensparsam**: IP-Adressen werden nach 7 Tagen gelöscht, Name, Mail, Ort und Anliegen
+  90 Tage nach dem Termin (beides einstellbar). Keine Cookies, keine fremden Skripte oder
+  Schriften, keine Statistik. Impressum und Datenschutzerklärung entstehen aus der
+  Konfiguration.
+- **Missbrauchsschutz**: Grenzen je Mailadresse und IP, verstecktes Feld gegen Bots,
+  Bereinigung aller Eingaben, Sicherheitskopfzeilen (CSP, HSTS).
 
 ## Schnellstart mit Docker
 
 ```bash
-git clone https://github.com/<konto>/buchungstool.git
+git clone https://github.com/Villagio88/buchungstool.git
 cd buchungstool
-cp buchung.env.example buchung.env
-# buchung.env ausfüllen: Kalenderlinks, Bereiche, SMTP, Impressum
+cp buchung.env.example buchung.env      # ausfüllen: Kalender, Bereiche, SMTP, Impressum
 docker compose up -d --build
+curl http://127.0.0.1:3000/gesund        # {"ok":true,...}
 ```
 
-Die Seite läuft danach auf `http://127.0.0.1:3000`. Für den Betrieb im Netz gehört ein
-Reverse Proxy mit HTTPS davor, etwa Caddy:
+Statt selbst zu bauen, geht auch das fertige Abbild `ghcr.io/villagio88/buchungstool`
+(siehe `docker-compose.yml`). Für den Betrieb im Netz gehört ein Reverse Proxy mit HTTPS
+davor, etwa Caddy:
 
 ```
 termin.example.com {
@@ -71,78 +85,102 @@ termin.example.com {
 }
 ```
 
-Änderungen an `buchung.env` brauchen keinen neuen Build: `docker compose up -d` genügt.
-Die Datenbank (SQLite) liegt im Volume `buchung_data` und überlebt Neustarts und Updates.
+Änderungen an `buchung.env` brauchen keinen neuen Build, `docker compose up -d` genügt.
+Die Datenbank (SQLite) liegt im Volume `buchung_data`. Sichern heisst: diese Datei
+kopieren, etwa mit `docker compose cp buchung:/data/buchung.db ./sicherung.db`.
 
 ## ICS-Links finden
 
-- **Proton Calendar**: Einstellungen, Kalender, beim gewünschten Kalender «Teilen»,
-  «Link erstellen».
+- **Proton Calendar**: Einstellungen, Kalender, «Teilen», «Link erstellen», Option
+  «Limited view» (nur belegt). Nur in bezahlten Plänen. Proton aktualisiert den Link
+  laut eigener Angabe mit bis zu acht Stunden Verzögerung.
 - **Microsoft 365 / Outlook im Web**: Einstellungen, Kalender, Freigegebene Kalender,
-  «Kalender veröffentlichen», Berechtigung «Kann anzeigen, wann ich beschäftigt bin»
-  genügt, dann den ICS-Link kopieren.
+  «Kalender veröffentlichen», Berechtigung «Kann anzeigen, wann ich beschäftigt bin»,
+  ICS-Link kopieren.
 - **Google Kalender**: Einstellungen des Kalenders, «Privatadresse im iCal-Format».
-- **iCloud**: Kalender freigeben, «Öffentlicher Kalender», Link mit `webcal://` durch
+- **iCloud**: Kalender als «Öffentlicher Kalender» freigeben, `webcal://` durch
   `https://` ersetzen.
 
-Diese Links sind geheim: wer sie hat, kann den Kalender lesen. Sie stehen deshalb nur in
-`buchung.env` und nie im Code.
+Diese Links sind Geheimnisse: wer sie hat, kann den Kalender lesen. Sie gehören nur in
+`buchung.env`. Gelangt ein Link nach aussen, beim Anbieter einen neuen erzeugen.
 
-Gut zu wissen: Veröffentlichte Feeds aktualisieren sich je nach Anbieter mit Verzögerung.
-Die Seite hält Feeds zusätzlich zwei Minuten im Zwischenspeicher, und ein Vorlauf
-(`VORLAUF_STUNDEN`) fängt Verzögerungen ab. Ob ein Feed aktuell ist, lässt sich mit einem
-Testeintrag prüfen.
+Wegen der Verzögerungen der Anbieter gibt es einen Vorlauf (`VORLAUF_STUNDEN`, Standard
+12): kurzfristig Eingetragenes ist so meist schon im Feed, bevor jemand die Zeit buchen
+kann. Ob ein Feed aktuell ist, zeigt ein Testeintrag.
+
+## Für Schulen und Organisationen
+
+- **Prüfen, ob Veröffentlichen erlaubt ist.** Microsoft 365 und Google Workspace lassen
+  das Veröffentlichen von Kalendern per Richtlinie sperren; in Schulen kommt das vor.
+  Fehlt die Option, entscheidet die IT, nicht das Buchungstool.
+- **Nur «belegt» freigeben.** Für das Buchungstool genügt die Stufe ohne Details, und sie
+  schützt Schüler- und Elterndaten, falls ein Link doch nach aussen gelangt.
+- **Datenschutz.** Betrieb auf eigenem Server in der Schweiz oder der EU, Versand über
+  einen Mailanbieter im selben Raum, Löschfristen gemäss eigener Vorgabe einstellen.
+  Die Datenschutzseite nennt Zweck, gespeicherte Daten und Fristen; Verantwortliche und
+  Mailanbieter (`DATENSCHUTZ_MAILDIENST`) müssen eingetragen werden. Bei Versand über
+  einen Anbieter ausserhalb der Schweiz verlangt das revDSG (Art. 19) die Nennung des
+  Staates. Keine Rechtsberatung.
+- **Wer betreibt es?** Das Buchungstool hat keine Benutzerverwaltung und keine Übersicht
+  der Buchungen. Massgeblich sind die Einladungen im eigenen Kalender. Für mehrere
+  Lehrpersonen braucht es je eine eigene Installation oder ein anderes Werkzeug.
 
 ## Konfiguration
 
 Alle Einstellungen stehen kommentiert in [`buchung.env.example`](buchung.env.example).
-Die wichtigsten:
 
 | Variable | Bedeutung |
 |---|---|
 | `INHABER_NAME` | Name im Titel, in den Einladungen und als Unterschrift |
 | `SEITEN_URL` | Öffentliche Adresse der Seite, für die Absage-Links (Pflicht) |
-| `KALENDER` | Namen der Kalender, Komma getrennt; je Name `KALENDER_<NAME>_URL` und optional `_PUFFER` |
+| `KALENDER` | Namen der Kalender; je Name `KALENDER_<NAME>_URL` und optional `_PUFFER` |
 | `BEREICHE` | Namen der Bereiche; je Name `BEREICH_<NAME>_NAME`, `_MAIL`, `_HINWEIS`, `_AKZENT`, `_LOGO`, `_WUNSCHZEITEN` |
 | `BEREICHE_OEFFENTLICH` | Bereiche, die ohne eigenen Link zur Auswahl stehen |
-| `VON_UHR`, `BIS_UHR`, `ARBEITSTAGE` | Bürozeit und Wochentage |
+| `VON_UHR`, `BIS_UHR`, `ARBEITSTAGE`, `TZ` | Bürozeit, Wochentage, Zeitzone |
 | `KALENDER_IGNORIEREN` | Titel, die nie blockieren, etwa `Ferien,Stand-up` |
-| `MAIL_SMTP_HOST`, `MAIL_USER`, `MAIL_PASS` | Versand der Einladungen |
+| `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_USER`, `MAIL_PASS` | Versand der Einladungen |
+| `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN` | Löschfristen |
 
-Logos gehören nach `public/marke/` und werden mit `BEREICH_<NAME>_LOGO=/marke/datei.png`
-eingebunden.
+## Betrieb
+
+- `GET /gesund` meldet Datenbank und Erreichbarkeit der Kalender, nur als Zahlen. Das
+  Docker-Abbild nutzt es als Healthcheck.
+- Der Container läuft als Benutzer `node`, nicht als root.
+- Ein Ausfall eines Kalenders sperrt das Buchen, bis er wieder erreichbar ist, statt
+  Zeiten anzubieten, die vielleicht belegt sind.
+- Updates: neues Abbild ziehen oder neu bauen, `docker compose up -d`. Die Datenbank wird
+  beim Start bei Bedarf um neue Spalten ergänzt, nie verändert oder geleert.
 
 ## Entwicklung
 
 ```bash
 npm ci
-cp buchung.env.example .env.local      # ausfüllen; next dev liest .env.local
-echo 'DATABASE_URL="file:./dev.db"' >> .env.local
-npx prisma generate
-DATABASE_URL="file:./dev.db" npx prisma db push
+cp buchung.env.example .env.local        # ausfüllen; next dev liest .env.local
 npm run dev
-npm test            # Tests für Zeitberechnung, Kalender, Einladungen, Belegung
+npm test                                  # Zeitberechnung, Kalender, Einladungen, Datenbank
+npm run sicherheit                        # Gästeeingaben gegen die Kalendereinladung
 ```
 
-Aufbau: Next.js (App Router) mit Server Actions, Prisma mit SQLite, `ical.js` zum Lesen
-der Feeds, `nodemailer` für den Versand. Die Zeitberechnung in `lib/slots.ts` ist frei von
-Ein- und Ausgabe und vollständig getestet. Tests und `scripts/sicherheit.ts` prüfen, dass
-Eingaben der Gäste weder Felder noch Teilnehmer der Kalendereinladung verändern können.
+Aufbau: Next.js (App Router) mit Server Actions, SQLite über das in Node 24 eingebaute
+`node:sqlite`, `ical.js` zum Lesen der Feeds, `nodemailer` für den Versand. Die
+Zeitberechnung in `lib/slots.ts` ist frei von Ein- und Ausgabe und vollständig getestet.
+Bezeichner und Kommentare sind Deutsch, siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Grenzen
 
 - Die Oberfläche ist Deutsch.
-- Die Einladungen tragen derzeit die Zeitzone Europe/Zurich (Mitteleuropäische Zeit).
-  Für andere Zeitzonen muss `lib/ical.ts` angepasst werden.
-- Es gibt keine Übersicht der Buchungen für den Inhaber; massgeblich sind die
-  Einladungen im eigenen Kalender.
-- Es gibt keine Videokonferenz-Links. Den Ort (auch «online») gibt der Gast an.
-- Fällt ein Kalender aus, nennt die Seite das, ohne den Kalender zu benennen, und nimmt
-  keine Buchungen an, bis er wieder erreichbar ist.
+- Keine Übersicht der Buchungen für den Inhaber und keine Benutzerverwaltung.
+- Keine Videokonferenz-Links; den Ort (auch «online») gibt der Gast an.
+- Die Verfügbarkeit ist nur so aktuell wie die Feeds der Anbieter.
 - Die Sperre je IP-Adresse setzt genau einen Reverse Proxy voraus, der
   `X-Forwarded-For` ergänzt.
 
-## Lizenz
+## Sicherheit und Lizenz
 
-[GNU Affero General Public License v3.0](LICENSE). Wer das Buchungstool verändert und
-als Dienst für andere betreibt, muss den geänderten Quellcode ebenfalls zugänglich machen.
+Lücken bitte nicht öffentlich melden, sondern wie in [SECURITY.md](SECURITY.md)
+beschrieben. Lizenz: [GNU Affero General Public License v3.0](LICENSE). Wer das
+Buchungstool verändert und als Dienst für andere betreibt, muss den geänderten Quellcode
+ebenfalls zugänglich machen.
+
+Entstanden mit Unterstützung von KI (Claude). Die Logik ist mit automatischen Tests
+abgesichert, die bei jeder Änderung in GitHub Actions laufen.

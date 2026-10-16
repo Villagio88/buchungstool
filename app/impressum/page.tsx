@@ -69,9 +69,10 @@ export default function Seite() {
           {a.serverOrt ? ` Gespeichert werden die Daten auf einem Server in ${a.serverOrt}.` : ""}
         </p>
         <p>
-          <strong className="font-medium">Wie lange.</strong> Die Buchung bleibt gespeichert,
-          solange sie für den Terminverlauf gebraucht wird. Eine Absage entfernt die Belegung,
-          der Eintrag selbst bleibt als Verlauf bestehen.
+          <strong className="font-medium">Wie lange.</strong> Die IP-Adresse wird nach{" "}
+          {KONFIG.loeschenIpNachTagen} Tagen gelöscht. Name, Mailadresse, Ort und Anliegen werden{" "}
+          {KONFIG.loeschenPersonendatenNachTagen} Tage nach dem Termin automatisch gelöscht; übrig
+          bleibt nur die belegte Zeit ohne Personenbezug. Eine Absage gibt die Zeit sofort frei.
         </p>
         <p>
           <strong className="font-medium">Keine Verfolgung.</strong> Diese Seite setzt keine

@@ -1,133 +1,128 @@
 # Buchungstool
 
-[Deutsche Fassung](README.md)
+[Deutsche Fassung](README.md) · [CI](https://github.com/Villagio88/buchungstool/actions) · License AGPL-3.0
 
-A self-hosted appointment booking page that checks **several calendars from different
-providers at once**. Free, open source, no account with any service required.
+A self-hosted appointment booking page that reads availability from **several calendars
+from different providers at once**, via their ICS links. No account with a booking
+service, no access to mailboxes, data on your own server.
 
-## The problem
+![Booking page with month view and recommended times](docs/screenshot.png)
 
-If you use Proton Calendar privately and Microsoft 365 for work, booking services fall
-short. Calendly, TidyCal, Microsoft Bookings and the like connect to Google or Microsoft,
-but not to Proton, and usually only to one account per provider. Guests end up booking
-slots that are already taken in your other calendar.
+## What it is for
 
-## The idea
+For people whose appointments live in calendars that cannot be connected to each other:
+Proton Calendar privately, Microsoft 365 at work, perhaps a school or club calendar on
+top. The well-known booking services (Calendly, TidyCal, Microsoft Bookings) connect by
+signing in to Google, Microsoft or Apple. Proton offers neither CalDAV nor an API, and
+many organisations do not allow third-party services to connect to their Microsoft 365
+accounts.
 
-Almost every calendar can be shared as an **ICS link** (iCal subscription): Proton,
-Microsoft 365 and Outlook, Google, iCloud, Nextcloud, Fastmail and many more. Buchungstool
-reads any number of these links and only offers a time slot if it is free in **all** of
-them. It needs no access to your accounts, just the read-only links.
+Almost every calendar can be shared as an **ICS link**, often as "busy only". Buchungstool
+reads any number of these links and only offers a slot if it is free in all of them.
+Guests only see free or busy; titles, locations and attendees never leave the server.
 
-Guests only ever see free or busy. Titles, locations and attendees never leave the server.
+### Honest positioning
+
+The idea is not unique, and nobody should find that out only after installing it:
+
+| Tool | ICS links as source | Self-hosted | License | Difference |
+|---|---|---|---|---|
+| **Buchungstool** | yes, any number | yes (Docker) | AGPL-3.0 | small, one person, several roles with their own target address, no accounts |
+| [Tymeslot](https://tymeslot.app) | yes | yes (Docker), also hosted | AGPL-3.0 | broader feature set, user accounts |
+| [Cal.diy](https://github.com/calcom/cal.diy) (formerly Cal.com) | yes, "ICS Feed" app | yes, involved | MIT | very extensive, for teams; self-hosting is involved |
+| [Proton Booking Pages](https://proton.me/support/calendar-appointment-scheduling) | Proton calendars | no | proprietary | part of Proton since April 2026; ideal if everything is in Proton |
+| Calendly, TidyCal, Microsoft Bookings | no (sign-in with Google, Microsoft, Apple) | no | proprietary | mature, but no Proton and data stays with the provider |
+
+As of October 2026, no warranty. If you only use Proton, Proton's booking pages serve you
+better. If you need many features and accounts, look at Tymeslot. Buchungstool is built
+for **one person** offering appointments **across several providers** while running as
+little software as possible.
 
 ## Features
 
 - **Availability from any number of ICS calendars**, including recurring events, time
-  zones (also Outlook's Windows zone names), all-day entries and events marked as "free".
-- **Buffer per calendar**, for example 30 minutes around private appointments that need
-  travel and 5 minutes around in-house meetings.
-- **Areas** with their own target address, e.g. "Consulting" to your business address and
-  "Private" to your private one, so the invitation lands in the right calendar. Each area
-  has a short link (`/beratung`), an optional accent colour and logo, and can be hidden
-  from the public selection so it is only reachable through its link.
-- **Free duration**: guests pick day, start and end themselves; only what actually fits
-  from the chosen start time is offered.
-- **Recommended times** that don't fragment your day (start of day, right after existing
-  appointments, around noon, end of day), plus a **weekly pattern** per area.
-- **Off-hours on request**: with `?anfrage=1`, times outside office hours become bookable
-  and are clearly marked in the e-mail and the event title.
-- **Real calendar invitations** (ICS, `METHOD:REQUEST`) to the owner and as confirmation
-  to the guest, via any SMTP account.
-- **Cancellation links** for guest and owner (one each) using `METHOD:CANCEL`: the event disappears
-  from both calendars and the slot becomes free again.
-- **Holidays as markers** in the month view, without blocking anything.
-- **No double bookings**: each booking claims time units with a unique key in the
-  database, and if any calendar is unreachable, nothing is booked at all.
-- **Abuse protection**: per-address and per-IP limits, honeypot field, input sanitising,
+  zones (also Outlook's Windows names), all-day entries and events marked as free.
+- **Buffer per calendar**, e.g. 30 minutes around private appointments, 5 around meetings.
+- **Areas** with their own target address so invitations land in the right calendar; each
+  has a short link (`/beratung`), accent colour, optional logo, and can be hidden.
+- **Free duration**: guests choose day, start and end; only what fits is offered.
+- **Recommended times** that don't fragment your day, plus a **weekly pattern** per area.
+- **Off-hours on request** via `?anfrage=1`, clearly marked.
+- **Real calendar invitations** (ICS) to owner and guest via any SMTP account, in UTC.
+- **Cancellation links**, one each for guest and owner, using `METHOD:CANCEL`.
+- **No double bookings**: five-minute units with a unique key; if any calendar is
+  unreachable, nothing is booked.
+- **Data minimisation**: IP addresses deleted after 7 days, name, e-mail, location and
+  message 90 days after the appointment (both configurable). No cookies, no third-party
+  scripts or fonts, no analytics.
+- **Abuse protection**: per-address and per-IP limits, honeypot, input sanitising,
   security headers (CSP, HSTS).
-- **Privacy-friendly**: no cookies, no third-party fonts or scripts, no analytics. Legal
-  notice and privacy statement are generated from the configuration.
 
 ## Quick start with Docker
 
 ```bash
-git clone https://github.com/<account>/buchungstool.git
+git clone https://github.com/Villagio88/buchungstool.git
 cd buchungstool
-cp buchung.env.example buchung.env
-# fill in buchung.env: calendar links, areas, SMTP, legal notice
+cp buchung.env.example buchung.env      # fill in calendars, areas, SMTP, legal notice
 docker compose up -d --build
+curl http://127.0.0.1:3000/gesund        # {"ok":true,...}
 ```
 
-The page then runs on `http://127.0.0.1:3000`. Put a reverse proxy with HTTPS in front of
-it for public use, for example Caddy:
-
-```
-booking.example.com {
-    reverse_proxy 127.0.0.1:3000
-}
-```
-
-Changes to `buchung.env` need no rebuild: `docker compose up -d` is enough. The SQLite
-database lives in the `buchung_data` volume and survives restarts and updates.
+A prebuilt image is available as `ghcr.io/villagio88/buchungstool`. Put a reverse proxy
+with HTTPS in front, e.g. Caddy (`reverse_proxy 127.0.0.1:3000`). Changes to
+`buchung.env` need no rebuild. Back up by copying `/data/buchung.db` from the container.
 
 ## Finding your ICS links
 
-- **Proton Calendar**: Settings, Calendars, "Share" on the calendar, "Create link".
+- **Proton Calendar**: Settings, Calendars, "Share", "Create link", "Limited view" (busy
+  only). Paid plans only; Proton states updates may take up to eight hours.
 - **Microsoft 365 / Outlook on the web**: Settings, Calendar, Shared calendars, "Publish a
-  calendar", permission "Can view when I'm busy" is enough, then copy the ICS link.
+  calendar", permission "Can view when I'm busy", copy the ICS link.
 - **Google Calendar**: calendar settings, "Secret address in iCal format".
-- **iCloud**: share the calendar as "Public Calendar" and replace `webcal://` with
-  `https://`.
+- **iCloud**: share as "Public Calendar", replace `webcal://` with `https://`.
 
-These links are secrets: whoever has them can read the calendar. They belong in
-`buchung.env` only, never in the code.
+These links are secrets. Keep them in `buchung.env` only and regenerate them if leaked.
+A lead time (`VORLAUF_STUNDEN`, default 12) absorbs provider delays.
+
+## For schools and organisations
+
+- Publishing calendars can be blocked by Microsoft 365 or Google Workspace policy, which
+  happens in schools. If the option is missing, ask your IT.
+- Share "busy only"; it is all Buchungstool needs and protects student and parent data.
+- Host in your jurisdiction, send mail through a provider there, set deletion periods.
+  Swiss law (revDSG, Art. 19) requires naming the country if data goes abroad. Not legal
+  advice.
+- There is no user management and no booking overview; each person needs their own
+  instance.
 
 ## Configuration
 
 All settings are documented in [`buchung.env.example`](buchung.env.example) (comments in
-German). The most important ones:
+German). Key variables: `INHABER_NAME`, `SEITEN_URL` (required), `KALENDER` with
+`KALENDER_<NAME>_URL` and `_PUFFER`, `BEREICHE` with `BEREICH_<NAME>_NAME`, `_MAIL`,
+`_HINWEIS`, `_AKZENT`, `_LOGO`, `_WUNSCHZEITEN`, office hours `VON_UHR`, `BIS_UHR`,
+`ARBEITSTAGE`, `TZ`, SMTP `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_USER`, `MAIL_PASS`,
+deletion periods `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN`.
 
-| Variable | Meaning |
-|---|---|
-| `INHABER_NAME` | Owner name in the title, invitations and e-mail signature |
-| `SEITEN_URL` | Public URL of the page, used for cancellation links (required) |
-| `KALENDER` | Calendar names, comma-separated; per name `KALENDER_<NAME>_URL` and optional `_PUFFER` (buffer in minutes) |
-| `BEREICHE` | Area names; per name `BEREICH_<NAME>_NAME`, `_MAIL`, `_HINWEIS`, `_AKZENT`, `_LOGO`, `_WUNSCHZEITEN` |
-| `BEREICHE_OEFFENTLICH` | Areas offered without a dedicated link |
-| `VON_UHR`, `BIS_UHR`, `ARBEITSTAGE` | Office hours and weekdays (1 = Monday) |
-| `KALENDER_IGNORIEREN` | Event titles that never block, e.g. `Ferien,Stand-up` |
-| `MAIL_SMTP_HOST`, `MAIL_USER`, `MAIL_PASS` | Sending the invitations |
+## Operations and development
 
-## Development
-
-```bash
-npm ci
-cp buchung.env.example .env.local      # fill in; next dev reads .env.local
-echo 'DATABASE_URL="file:./dev.db"' >> .env.local
-npx prisma generate
-DATABASE_URL="file:./dev.db" npx prisma db push
-npm run dev
-npm test
-```
-
-Stack: Next.js (App Router) with Server Actions, Prisma with SQLite, `ical.js` for parsing
-feeds, `nodemailer` for sending. The slot calculation in `lib/slots.ts` is free of I/O and
-fully tested.
+- `GET /gesund` reports database and calendar reachability as numbers only; used as the
+  Docker healthcheck. The container runs as user `node`.
+- `npm ci`, `cp buchung.env.example .env.local`, `npm run dev`, `npm test`,
+  `npm run sicherheit`.
+- Stack: Next.js (App Router), SQLite via Node 24's built-in `node:sqlite`, `ical.js`,
+  `nodemailer`. Identifiers and comments are in German, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Limitations
 
-- The user interface is in German.
-- Invitations currently use the Europe/Zurich time zone (Central European Time); other
-  zones require a change in `lib/ical.ts`.
-- There is no admin overview of bookings; the invitations in your own calendar are the
-  record.
-- No video conference links are generated; the guest enters the location (or "online").
-- If a calendar is unreachable, the page says so without naming it and accepts no bookings
-  until it is back.
-- The per-IP limit assumes exactly one reverse proxy that appends `X-Forwarded-For`.
+German user interface only; no booking overview or user management; no video conference
+links; availability is only as fresh as the providers' feeds; the per-IP limit assumes
+exactly one reverse proxy appending `X-Forwarded-For`.
 
-## License
+## Security and license
 
-[GNU Affero General Public License v3.0](LICENSE). If you modify Buchungstool and run it
-as a service for others, you must make your modified source code available as well.
+Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+License: [GNU Affero General Public License v3.0](LICENSE).
+
+Built with AI assistance (Claude). The logic is covered by automated tests that run on
+every change in GitHub Actions.

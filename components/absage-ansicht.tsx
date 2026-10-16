@@ -46,7 +46,7 @@ export function AbsageAnsicht(props: {
 
       {erledigt ? (
         <p className="mt-6 text-sm text-neutral-600 dark:text-neutral-400">
-          Die Zeit ist wieder frei. Du und ich haben eine Absage per Mail bekommen.
+          Die Zeit ist wieder frei. Beide Seiten haben eine Absage per Mail bekommen.
         </p>
       ) : (
         <form action={aktion} className="mt-6">

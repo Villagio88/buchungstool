@@ -2,35 +2,38 @@
   "name": "buchungstool",
   "description": "Selbst gehostete Terminbuchung, die mehrere ICS-Kalender verschiedener Anbieter zugleich berücksichtigt.",
   "license": "AGPL-3.0-only",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test": "tsx --test lib/*.test.ts"
+    "lint": "eslint .",
+    "test": "TZ=Europe/Zurich tsx --test lib/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "sicherheit": "tsx scripts/sicherheit.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.2",
     "date-fns": "^4.4.0",
     "ical.js": "^2.2.1",
-    "next": "16.1.6",
-    "nodemailer": "^9.0.6",
+    "next": "^16.4.2",
+    "nodemailer": "^10.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/nodemailer": "^8.0.1",
+    "@types/node": "^24.19.2",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "prisma": "^6.19.2",
+    "eslint-config-next": "^16.4.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

@@ -239,13 +239,14 @@ export function Buchen(props: Props) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => window.location.assign("/")}
-          className="mt-8 min-h-[44px] rounded-xl border border-neutral-200 px-5 text-[15px] font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
+        {/* Ein gewöhnlicher Link: das Neuladen setzt Formular und Auswahl zurück. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a
+          href="/"
+          className="mt-8 inline-flex min-h-[44px] items-center rounded-xl border border-neutral-200 px-5 text-[15px] font-medium transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-900"
         >
           Noch einen Termin buchen
-        </button>
+        </a>
       </main>
     );
   }

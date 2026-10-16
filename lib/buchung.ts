@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { db } from "./db";
+import { db, UeberschneidungsFehler } from "./db";
 import { getBelegteZeiten, type Belegt } from "./kalender";
 import {
   berechneSlots,
@@ -39,13 +39,33 @@ export const OPTIONEN: SlotOptionen = {
 
 /** Eigene Buchungen als belegte Zeiten, damit ein Slot sofort gesperrt ist. */
 async function eigeneBuchungen(von: Date, bis: Date): Promise<Belegt[]> {
-  const rows = await db.buchung.findMany({
-    where: { ende: { gte: von }, start: { lte: bis }, storniert: null },
-    select: { start: true, ende: true },
-  });
+  const rows = db().aktiveImFenster(von, bis);
   // Auch zu einem selbst gebuchten Termin gilt ein Abstand (PUFFER_EIGENE),
   // sonst klebt die nächste Buchung direkt daran.
   return rows.map((r) => ({ start: r.start, ende: r.ende, puffer: KONFIG.pufferEigene }));
+}
+
+/**
+ * Löscht abgelaufene Personendaten, höchstens einmal pro Stunde. Läuft bei
+ * normalen Seitenaufrufen mit, damit es keinen eigenen Zeitplaner braucht.
+ */
+let letztesAufraeumen = 0;
+function aufraeumenWennFaellig(): void {
+  const jetzt = Date.now();
+  if (jetzt - letztesAufraeumen < 3_600_000) return;
+  letztesAufraeumen = jetzt;
+  try {
+    const r = db().aufraeumen(
+      new Date(jetzt),
+      KONFIG.loeschenIpNachTagen,
+      KONFIG.loeschenPersonendatenNachTagen,
+    );
+    if (r.ip || r.personen) {
+      console.log(`[datenschutz] bereinigt: ${r.ip} IP-Adressen, ${r.personen} Buchungen`);
+    }
+  } catch (e) {
+    console.error("[datenschutz] Aufräumen fehlgeschlagen:", e);
+  }
 }
 
 export type MonatsStand = {
@@ -77,6 +97,7 @@ export async function getMonat(
   mitAnfrage = false,
   bereich?: BereichKey,
 ): Promise<MonatsStand> {
+  aufraeumenWennFaellig();
   const { von, bis } = monatsRand(jahr, monat);
   const jetzt = new Date();
 
@@ -230,6 +251,7 @@ export function einheitenVon(start: Date, ende: Date): Date[] {
 }
 
 export async function buchen(eingabe: BuchungsEingabe): Promise<BuchungsErgebnis> {
+  aufraeumenWennFaellig();
   // Bot-Falle: ein unsichtbares Feld, das ein Mensch nie sieht und nie ausfüllt.
   // Stillschweigend abweisen, damit ein Bot nicht lernt, woran es lag.
   if (eingabe.falle.trim() !== "") {
@@ -276,12 +298,8 @@ export async function buchen(eingabe: BuchungsEingabe): Promise<BuchungsErgebnis
 
   // Missbrauchsbremse, bevor irgendetwas Teures passiert.
   const seit = new Date(Date.now() - 86_400_000);
-  const [proMail, proIp] = await Promise.all([
-    db.buchung.count({ where: { email, erstellt: { gte: seit } } }),
-    eingabe.ip
-      ? db.buchung.count({ where: { ip: eingabe.ip, erstellt: { gte: seit } } })
-      : Promise.resolve(0),
-  ]);
+  const proMail = db().anzahlSeit("email", email, seit);
+  const proIp = eingabe.ip ? db().anzahlSeit("ip", eingabe.ip, seit) : 0;
   if (proMail >= KONFIG.maxProMailUndTag || proIp >= KONFIG.maxProIpUndTag) {
     return { ok: false, grund: "Es sind schon mehrere Termine offen. Bitte melde dich direkt per Mail." };
   }
@@ -325,36 +343,32 @@ export async function buchen(eingabe: BuchungsEingabe): Promise<BuchungsErgebnis
 
   let id: string;
   try {
-    const row = await db.$transaction(async (tx) => {
-      const b = await tx.buchung.create({
-        data: {
-          start,
-          ende,
-          minuten: dauer,
-          token,
-          tokenInhaber,
-          bereich: bereich.key,
-          name,
-          email,
-          anliegen,
-          ort,
-          ip: eingabe.ip,
-        },
-        select: { id: true },
-      });
-      await tx.belegung.createMany({
-        data: einheitenVon(start, ende).map((einheit) => ({ einheit, buchungId: b.id })),
-      });
-      return b;
-    });
-    id = row.id;
-  } catch {
+    id = db().anlegen(
+      {
+        start,
+        ende,
+        minuten: dauer,
+        bereich: bereich.key,
+        name,
+        email,
+        anliegen,
+        ort,
+        ip: eingabe.ip,
+        token,
+        tokenInhaber,
+      },
+      einheitenVon(start, ende),
+    );
+  } catch (e) {
     // Eine der Fünf-Minuten-Einheiten war schon vergeben: jemand war schneller
     // oder wollte sich überlappend danebenlegen. Die Transaktion ist zurückgerollt.
-    return {
-      ok: false,
-      grund: "Dieser Termin überschneidet sich mit einer soeben eingegangenen Buchung.",
-    };
+    if (e instanceof UeberschneidungsFehler) {
+      return {
+        ok: false,
+        grund: "Dieser Termin überschneidet sich mit einer soeben eingegangenen Buchung.",
+      };
+    }
+    throw e;
   }
 
   // Erst jetzt Mails. Scheitert der Versand, bleibt die Buchung bestehen und
@@ -414,20 +428,14 @@ export async function absagen(
   id: string,
   token: string,
 ): Promise<{ ok: true; start: Date; name: string } | { ok: false; grund: string }> {
-  const b = await db.buchung.findUnique({ where: { id } });
+  const b = db().lesen(id);
   const von = b ? absenderDesLinks(b, token) : null;
   if (!b || !von) {
     return { ok: false, grund: "Dieser Absage-Link stimmt nicht." };
   }
   if (b.storniert) return { ok: false, grund: "Dieser Termin ist bereits abgesagt." };
 
-  await db.$transaction(async (tx) => {
-    await tx.buchung.update({
-      where: { id },
-      data: { storniert: new Date(), storniertVon: von },
-    });
-    await tx.belegung.deleteMany({ where: { buchungId: id } });
-  });
+  db().stornieren(id, von);
 
   const bereich = bereichAus(b.bereich);
   if (bereich) {
@@ -451,7 +459,7 @@ export async function absagen(
 
 /** Die Daten eines Termins für die Absage-Seite. */
 export async function terminFuerAbsage(id: string, token: string) {
-  const b = await db.buchung.findUnique({ where: { id } });
+  const b = db().lesen(id);
   if (!b || !absenderDesLinks(b, token)) return null;
   return {
     start: b.start,

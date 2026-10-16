@@ -126,3 +126,9 @@ for (const name of ANGRIFFE) {
     assert.equal(event.location, name);
   });
 }
+
+test("Start und Ende stehen in UTC, unabhängig von der Zeitzone des Servers", () => {
+  const ics = baueEinladung(BASIS);
+  assert.match(ics, new RegExp(`DTSTART:${BASIS.start.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")}\r\n`));
+  assert.doesNotMatch(ics, /TZID=/);
+});

@@ -66,33 +66,12 @@ function utcStempel(d: Date): string {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
-function ortszeit(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return (
-    `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
-    `T${p(d.getHours())}${p(d.getMinutes())}00`
-  );
-}
-
-const VTIMEZONE = [
-  "BEGIN:VTIMEZONE",
-  "TZID:Europe/Zurich",
-  "BEGIN:DAYLIGHT",
-  "TZOFFSETFROM:+0100",
-  "TZOFFSETTO:+0200",
-  "TZNAME:CEST",
-  "DTSTART:19700329T020000",
-  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
-  "END:DAYLIGHT",
-  "BEGIN:STANDARD",
-  "TZOFFSETFROM:+0200",
-  "TZOFFSETTO:+0100",
-  "TZNAME:CET",
-  "DTSTART:19701025T030000",
-  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
-  "END:STANDARD",
-  "END:VTIMEZONE",
-];
+/*
+ * Start und Ende stehen in UTC (mit «Z»). Das versteht jeder Kalender, und die
+ * Einladung stimmt unabhängig davon, in welcher Zeitzone Server, Inhaber und
+ * Gast sitzen. Eine mitgelieferte VTIMEZONE wäre nur nötig, um eine bestimmte
+ * Zone anzuzeigen; die Kalender rechnen ohnehin in die eigene Zone um.
+ */
 
 export type EinladungDaten = {
   uid: string;
@@ -122,12 +101,11 @@ export function baueEinladung(d: EinladungDaten, absage = false): string {
     // hochgezählte SEQUENCE ist dafür Pflicht, sonst ignorieren Outlook und
     // Proton die Nachricht als veraltet.
     absage ? "METHOD:CANCEL" : "METHOD:REQUEST",
-    ...VTIMEZONE,
     "BEGIN:VEVENT",
     `UID:${d.uid}`,
     `DTSTAMP:${utcStempel(new Date())}`,
-    `DTSTART;TZID=Europe/Zurich:${ortszeit(d.start)}`,
-    `DTEND;TZID=Europe/Zurich:${ortszeit(d.ende)}`,
+    `DTSTART:${utcStempel(d.start)}`,
+    `DTEND:${utcStempel(d.ende)}`,
     `SUMMARY:${maskieren(d.titel)}`,
     ...(d.ort ? [`LOCATION:${maskieren(d.ort)}`] : []),
     `DESCRIPTION:${maskieren(d.beschreibung)}`,

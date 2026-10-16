@@ -73,6 +73,13 @@ export const KONFIG = {
   maxProMailUndTag: zahl("MAX_PRO_MAIL_TAG", 3),
   maxProIpUndTag: zahl("MAX_PRO_IP_TAG", 5),
   /**
+   * Datensparsamkeit: IP-Adressen werden nach so vielen Tagen entfernt (sie
+   * dienen nur der Missbrauchsgrenze), Name, Mail, Anliegen und Ort so viele
+   * Tage nach dem Termin. Die Zeile bleibt als anonymer Verlauf stehen.
+   */
+  loeschenIpNachTagen: zahl("LOESCHEN_IP_NACH_TAGEN", 7),
+  loeschenPersonendatenNachTagen: zahl("LOESCHEN_PERSONENDATEN_NACH_TAGEN", 90),
+  /**
    * Angaben für Impressum und Datenschutz. Bewusst leer vorbelegt: lieber ein
    * sichtbarer Hinweis auf der Seite als erfundene Angaben.
    */
@@ -130,7 +137,7 @@ function envTeil(key: string): string {
  * Der Schlüssel ist zugleich der kurze Pfad: /beratung zeigt nur diesen Bereich.
  */
 /** Pfade, die die Seite selbst belegt und die deshalb kein Bereich heissen darf. */
-const RESERVIERT = new Set(["impressum", "absagen", "marke", "api", "_next"]);
+const RESERVIERT = new Set(["impressum", "absagen", "gesund", "marke", "api", "_next"]);
 const SCHLUESSEL = /^[a-z0-9-]+$/;
 /**
  * Gültige Mailadresse, ohne Zeichen, die in Mail-Kopfzeilen oder iCalendar eine

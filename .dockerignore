@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+*.db
+*.db-*
+buchung.env*
+!buchung.env.example
+.env*
+*.log
