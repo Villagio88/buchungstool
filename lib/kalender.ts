@@ -246,14 +246,43 @@ export function belegtAusIcs(
   return zeiten;
 }
 
+/**
+ * Eigener Zwischenspeicher je Feed-Adresse, bewusst nicht der Daten-Cache von
+ * Next.js: der liefert nach einem gescheiterten Abruf weiter die alte Antwort aus,
+ * ohne zeitliche Grenze. Ein ausgefallener Kalender fiele so nie auf, und die
+ * Seite buchte gegen veraltete Daten. Hier gilt ein Feed nur CACHE_SEKUNDEN
+ * lang; danach muss ein neuer Abruf gelingen, sonst zählt er als ausgefallen.
+ */
+const zwischenspeicher = new Map<string, { zeit: number; text: string }>();
+const laufend = new Map<string, Promise<string>>();
+
+async function feedText(url: string): Promise<string> {
+  const vorhanden = zwischenspeicher.get(url);
+  if (vorhanden && Date.now() - vorhanden.zeit < CACHE_SEKUNDEN * 1000) return vorhanden.text;
+
+  // Gleichzeitige Anfragen teilen sich einen Abruf, statt den Anbieter mehrfach
+  // anzufragen.
+  const offen = laufend.get(url);
+  if (offen) return offen;
+
+  const abruf = (async () => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    zwischenspeicher.set(url, { zeit: Date.now(), text });
+    return text;
+  })();
+  laufend.set(url, abruf);
+  try {
+    return await abruf;
+  } finally {
+    laufend.delete(url);
+  }
+}
+
 async function quelleLaden(quelle: QuellenDefinition, von: Date, bis: Date): Promise<Belegt[]> {
-  const res = await fetch(quelle.url, {
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    next: { revalidate: CACHE_SEKUNDEN },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return belegtAusIcs(
-    await res.text(),
+    await feedText(quelle.url),
     von,
     bis,
     quelle.maxStunden,

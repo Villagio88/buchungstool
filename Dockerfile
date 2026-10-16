@@ -24,14 +24,18 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     DATENBANK_PFAD=/data/buchung.db
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-COPY --from=builder --chown=node:node /app/public ./public
-# Eigener Benutzer statt root; das Datenverzeichnis gehört ihm.
-RUN mkdir -p /data && chown node:node /data
-USER node
+# Der Code gehört root und ist für node nur lesbar; schreiben darf node nur in
+# den Zwischenspeicher von Next.js und ins Datenverzeichnis.
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+COPY docker-start.sh ./docker-start.sh
+RUN mkdir -p /data .next/cache && chown node:node /data .next/cache && chmod 755 ./docker-start.sh
 VOLUME ["/data"]
 EXPOSE 3000
-HEALTHCHECK --interval=60s --timeout=5s --start-period=20s --retries=3 \
+# Der erste Abruf der Kalender kann einige Sekunden dauern, daher der grosszügige
+# Zeitrahmen.
+HEALTHCHECK --interval=60s --timeout=30s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/gesund').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node", "server.js"]
+# Startet als root, übergibt /data an node und läuft dann als node weiter.
+CMD ["./docker-start.sh"]

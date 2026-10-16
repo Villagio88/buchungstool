@@ -13,7 +13,7 @@ service, no access to mailboxes, data on your own server.
 For people whose appointments live in calendars that cannot be connected to each other:
 Proton Calendar privately, Microsoft 365 at work, perhaps a school or club calendar on
 top. The well-known booking services (Calendly, TidyCal, Microsoft Bookings) connect by
-signing in to Google, Microsoft or Apple. Proton offers neither CalDAV nor an API, and
+signing in to Google, Microsoft or Apple (Bookings only to its own Microsoft 365). Proton offers neither CalDAV nor an API, and
 many organisations do not allow third-party services to connect to their Microsoft 365
 accounts.
 
@@ -28,10 +28,11 @@ The idea is not unique, and nobody should find that out only after installing it
 | Tool | ICS links as source | Self-hosted | License | Difference |
 |---|---|---|---|---|
 | **Buchungstool** | yes, any number | yes (Docker) | AGPL-3.0 | small, one person, several roles with their own target address, no accounts |
-| [Tymeslot](https://tymeslot.app) | yes | yes (Docker), also hosted | AGPL-3.0 | broader feature set, user accounts |
-| [Cal.diy](https://github.com/calcom/cal.diy) (formerly Cal.com) | yes, "ICS Feed" app | yes, involved | MIT | very extensive, for teams; self-hosting is involved |
+| [Tymeslot](https://tymeslot.app) | yes, per [feature list](https://tymeslot.app/features) ("feed URL") | yes (Docker), also hosted | AGPL-3.0 | broader feature set, user accounts |
+| [Cal.diy](https://github.com/calcom/cal.diy) (community edition of Cal.com) | yes, "ICS Feed" app | yes, involved | MIT | very extensive, for teams; self-hosting is involved |
 | [Proton Booking Pages](https://proton.me/support/calendar-appointment-scheduling) | Proton calendars | no | proprietary | part of Proton since April 2026; ideal if everything is in Proton |
-| Calendly, TidyCal, Microsoft Bookings | no (sign-in with Google, Microsoft, Apple) | no | proprietary | mature, but no Proton and data stays with the provider |
+| Calendly, TidyCal | no (sign-in with Google, Microsoft, Apple) | no | proprietary | mature, but no Proton and data stays with the provider |
+| Microsoft Bookings | no (only its own Microsoft 365 calendar) | no | proprietary | included in Microsoft 365, within your own organisation |
 
 As of October 2026, no warranty. If you only use Proton, Proton's booking pages serve you
 better. If you need many features and accounts, look at Tymeslot. Buchungstool is built
@@ -70,7 +71,9 @@ curl http://127.0.0.1:3000/gesund        # {"ok":true,...}
 
 A prebuilt image is available as `ghcr.io/villagio88/buchungstool`. Put a reverse proxy
 with HTTPS in front, e.g. Caddy (`reverse_proxy 127.0.0.1:3000`). Changes to
-`buchung.env` need no rebuild. Back up by copying `/data/buchung.db` from the container.
+`buchung.env` need no rebuild. For a consistent backup while running, use SQLite's
+`VACUUM INTO` (see the German README for the exact command) and copy the result out;
+copying the database file alone may miss recent writes.
 
 ## Finding your ICS links
 
@@ -107,7 +110,8 @@ deletion periods `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN`.
 ## Operations and development
 
 - `GET /gesund` reports database and calendar reachability as numbers only; used as the
-  Docker healthcheck. The container runs as user `node`.
+  Docker healthcheck. The container starts as root only to hand `/data` to user `node`,
+  then runs as `node`, so volumes from older versions keep working.
 - `npm ci`, `cp buchung.env.example .env.local`, `npm run dev`, `npm test`,
   `npm run sicherheit`.
 - Stack: Next.js (App Router), SQLite via Node 24's built-in `node:sqlite`, `ical.js`,

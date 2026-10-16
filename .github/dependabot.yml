@@ -8,6 +8,10 @@ updates:
       abhaengigkeiten:
         patterns: ["*"]
         update-types: [minor, patch]
+    # Grosse Versionssprünge bewusst von Hand, nicht als Flut von Vorschlägen.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -16,3 +20,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    # Nur Node-LTS (gerade Hauptversionen) und keinen Sprung ohne Absicht.
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]

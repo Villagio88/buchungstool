@@ -3,8 +3,11 @@
 ## 0.2.0 (Oktober 2026)
 
 - Datenbank über das in Node 24 eingebaute `node:sqlite` statt Prisma: weniger
-  Abhängigkeiten, keine bekannten Lücken in den Laufzeitpaketen, bestehende
-  Datenbanken laufen ohne Umbau weiter.
+  Abhängigkeiten, keine bekannten Lücken in den Laufzeitpaketen. Bestehende
+  Datenbanken werden weiterverwendet; der Container übergibt das Volume beim
+  Start dem Benutzer `node`.
+- Kalender-Feeds mit eigenem Zwischenspeicher (2 Minuten): fällt ein Feed aus,
+  wird nicht mehr gegen veraltete Daten gebucht.
 - Next.js 16.4 und nodemailer 10 (Sicherheitskorrekturen).
 - Einladungen in UTC, korrekt in jeder Zeitzone.
 - Automatische Löschung: IP-Adressen nach 7 Tagen, Personendaten 90 Tage nach
@@ -17,5 +20,5 @@
 
 ## 0.1.0 (Oktober 2026)
 
-- Erste öffentliche Fassung: Verfügbarkeit aus beliebig vielen ICS-Kalendern,
+- Erste Fassung: Verfügbarkeit aus beliebig vielen ICS-Kalendern,
   Bereiche, freie Dauer, empfohlene Zeiten, Einladungen und Absage per Link.

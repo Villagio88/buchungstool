@@ -50,7 +50,7 @@ async function eigeneBuchungen(von: Date, bis: Date): Promise<Belegt[]> {
  * normalen Seitenaufrufen mit, damit es keinen eigenen Zeitplaner braucht.
  */
 let letztesAufraeumen = 0;
-function aufraeumenWennFaellig(): void {
+export function aufraeumenWennFaellig(): void {
   const jetzt = Date.now();
   if (jetzt - letztesAufraeumen < 3_600_000) return;
   letztesAufraeumen = jetzt;

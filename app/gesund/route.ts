@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getBelegteZeiten } from "@/lib/kalender";
+import { aufraeumenWennFaellig } from "@/lib/buchung";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,10 @@ export const dynamic = "force-dynamic";
  * den Dienst nicht kaputt, er sperrt nur das Buchen und steht in der Antwort.
  */
 export async function GET() {
+  // Der Healthcheck ruft diese Seite jede Minute auf. So laufen die Löschfristen
+  // auch dann, wenn niemand die Buchungsseite besucht.
+  aufraeumenWennFaellig();
+
   let datenbank = false;
   try {
     db().anzahl();

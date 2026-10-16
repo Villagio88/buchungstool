@@ -130,7 +130,7 @@ export class Datenbank {
     this.d = new DatabaseSync(pfad);
     // WAL erlaubt Lesen während eines Schreibvorgangs; busy_timeout lässt eine
     // zweite gleichzeitige Buchung kurz warten, statt sofort zu scheitern.
-    this.d.exec("PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = ON;");
+    this.d.exec("PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     this.d.exec(SCHEMA);
     this.nachtragen();
   }
@@ -191,8 +191,12 @@ export class Datenbank {
       this.d.exec("COMMIT");
       return id;
     } catch (e) {
-      this.d.exec("ROLLBACK");
-      if (e instanceof Error && /UNIQUE|PRIMARY KEY/i.test(e.message)) {
+      // SQLite rollt bei manchen Fehlern (Platte voll, E/A) selbst zurück; ein
+      // zweites ROLLBACK würde dann den eigentlichen Fehler überdecken.
+      if (this.d.isTransaction) this.d.exec("ROLLBACK");
+      // Nur eine vergebene Einheit ist eine Überschneidung, nicht jede
+      // Verletzung eines eindeutigen Schlüssels.
+      if (e instanceof Error && /Belegung\.einheit/.test(e.message)) {
         throw new UeberschneidungsFehler();
       }
       throw e;
@@ -214,7 +218,7 @@ export class Datenbank {
       this.d.prepare(`DELETE FROM "Belegung" WHERE "buchungId" = ?`).run(id);
       this.d.exec("COMMIT");
     } catch (e) {
-      this.d.exec("ROLLBACK");
+      if (this.d.isTransaction) this.d.exec("ROLLBACK");
       throw e;
     }
   }

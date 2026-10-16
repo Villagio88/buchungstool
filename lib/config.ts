@@ -77,8 +77,10 @@ export const KONFIG = {
    * dienen nur der Missbrauchsgrenze), Name, Mail, Anliegen und Ort so viele
    * Tage nach dem Termin. Die Zeile bleibt als anonymer Verlauf stehen.
    */
-  loeschenIpNachTagen: zahl("LOESCHEN_IP_NACH_TAGEN", 7),
-  loeschenPersonendatenNachTagen: zahl("LOESCHEN_PERSONENDATEN_NACH_TAGEN", 90),
+  // Mindestens ein Tag: sonst griffe die Tagesgrenze je IP nicht mehr, und ein
+  // negativer Wert würde künftige Buchungen samt Absage-Links anonymisieren.
+  loeschenIpNachTagen: Math.max(1, zahl("LOESCHEN_IP_NACH_TAGEN", 7)),
+  loeschenPersonendatenNachTagen: Math.max(1, zahl("LOESCHEN_PERSONENDATEN_NACH_TAGEN", 90)),
   /**
    * Angaben für Impressum und Datenschutz. Bewusst leer vorbelegt: lieber ein
    * sichtbarer Hinweis auf der Seite als erfundene Angaben.

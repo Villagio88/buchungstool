@@ -13,7 +13,8 @@ einem Buchungsdienst, ohne Zugriff auf Postfächer, mit Daten auf dem eigenen Se
 Für Leute, deren Termine in Kalendern liegen, die sich nicht miteinander verbinden lassen:
 privat Proton Calendar, geschäftlich Microsoft 365, dazu vielleicht ein Kalender einer
 Schule oder eines Vereins. Die bekannten Buchungsdienste (Calendly, TidyCal, Microsoft
-Bookings) verbinden sich per Anmeldung mit Google, Microsoft oder Apple. Proton bietet
+Bookings) verbinden sich per Anmeldung mit Google, Microsoft oder Apple, Bookings nur
+mit dem eigenen Microsoft 365. Proton bietet
 weder CalDAV noch eine API, und viele Organisationen erlauben keine Verbindung eines
 fremden Dienstes mit ihrem Microsoft-365-Konto.
 
@@ -29,10 +30,11 @@ Die Idee ist nicht einzigartig, und das soll niemand erst nach der Installation 
 | Werkzeug | ICS-Links als Quelle | Selbst hosten | Lizenz | Unterschied |
 |---|---|---|---|---|
 | **Buchungstool** | ja, beliebig viele | ja (Docker) | AGPL-3.0 | klein, eine Person, mehrere Rollen mit eigener Zieladresse, keine Konten |
-| [Tymeslot](https://tymeslot.app) | ja | ja (Docker), auch gehostet | AGPL-3.0 | grösserer Funktionsumfang, Benutzerkonten |
-| [Cal.diy](https://github.com/calcom/cal.diy) (früher Cal.com) | ja, App «ICS Feed» | ja, aufwendig | MIT | sehr umfangreich, für Teams; Selbsthosten aufwendig |
+| [Tymeslot](https://tymeslot.app) | ja, laut [Funktionsliste](https://tymeslot.app/features) («feed URL») | ja (Docker), auch gehostet | AGPL-3.0 | grösserer Funktionsumfang, Benutzerkonten |
+| [Cal.diy](https://github.com/calcom/cal.diy) (Community-Fassung von Cal.com) | ja, App «ICS Feed» | ja, aufwendig | MIT | sehr umfangreich, für Teams; Selbsthosten aufwendig |
 | [Proton Booking Pages](https://proton.me/support/calendar-appointment-scheduling) | Proton-Kalender | nein | proprietär | seit April 2026 in Proton enthalten; ideal, wenn alles in Proton liegt |
-| Calendly, TidyCal, Microsoft Bookings | nein (Anmeldung bei Google, Microsoft, Apple) | nein | proprietär | ausgereift, aber ohne Proton und mit Daten beim Anbieter |
+| Calendly, TidyCal | nein (Anmeldung bei Google, Microsoft, Apple) | nein | proprietär | ausgereift, aber ohne Proton und mit Daten beim Anbieter |
+| Microsoft Bookings | nein (nur der eigene Microsoft-365-Kalender) | nein | proprietär | in Microsoft 365 enthalten, nur innerhalb der eigenen Organisation |
 
 Stand Oktober 2026, ohne Gewähr. Wer nur Proton nutzt, ist mit Protons Buchungsseiten
 besser bedient. Wer viele Funktionen und Konten braucht, mit Tymeslot. Das Buchungstool
@@ -86,8 +88,14 @@ termin.example.com {
 ```
 
 Änderungen an `buchung.env` brauchen keinen neuen Build, `docker compose up -d` genügt.
-Die Datenbank (SQLite) liegt im Volume `buchung_data`. Sichern heisst: diese Datei
-kopieren, etwa mit `docker compose cp buchung:/data/buchung.db ./sicherung.db`.
+Die Datenbank (SQLite) liegt im Volume `buchung_data`. Für eine Sicherung im laufenden
+Betrieb eine konsistente Kopie erzeugen und herausholen (die Datei allein zu kopieren
+reicht nicht, weil SQLite neue Daten zuerst in eine Nebendatei schreibt):
+
+```bash
+docker compose exec buchung node -e "new (require('node:sqlite').DatabaseSync)('/data/buchung.db').exec(\"VACUUM INTO '/data/sicherung.db'\")"
+docker compose cp buchung:/data/sicherung.db ./sicherung-$(date +%F).db
+```
 
 ## ICS-Links finden
 
@@ -145,11 +153,13 @@ Alle Einstellungen stehen kommentiert in [`buchung.env.example`](buchung.env.exa
 
 - `GET /gesund` meldet Datenbank und Erreichbarkeit der Kalender, nur als Zahlen. Das
   Docker-Abbild nutzt es als Healthcheck.
-- Der Container läuft als Benutzer `node`, nicht als root.
 - Ein Ausfall eines Kalenders sperrt das Buchen, bis er wieder erreichbar ist, statt
   Zeiten anzubieten, die vielleicht belegt sind.
-- Updates: neues Abbild ziehen oder neu bauen, `docker compose up -d`. Die Datenbank wird
-  beim Start bei Bedarf um neue Spalten ergänzt, nie verändert oder geleert.
+- Updates: neues Abbild ziehen oder neu bauen, `docker compose up -d`. Fehlende Spalten
+  ergänzt die Seite beim ersten Zugriff auf die Datenbank; vorhandene Daten bleiben.
+  Vorher eine Sicherung anlegen (siehe oben).
+- Der Container startet kurz als root, übergibt das Datenverzeichnis dem Benutzer
+  `node` und läuft dann als `node`. So funktionieren auch Volumes älterer Fassungen.
 
 ## Entwicklung
 
@@ -163,7 +173,7 @@ npm run sicherheit                        # Gästeeingaben gegen die Kalenderein
 
 Aufbau: Next.js (App Router) mit Server Actions, SQLite über das in Node 24 eingebaute
 `node:sqlite`, `ical.js` zum Lesen der Feeds, `nodemailer` für den Versand. Die
-Zeitberechnung in `lib/slots.ts` ist frei von Ein- und Ausgabe und vollständig getestet.
+Zeitberechnung in `lib/slots.ts` ist frei von Ein- und Ausgabe und mit Tests abgedeckt.
 Bezeichner und Kommentare sind Deutsch, siehe [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Grenzen

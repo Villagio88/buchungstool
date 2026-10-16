@@ -98,7 +98,7 @@ export default async function Seite({
         ferienHeute={zeigtFerien(bereichKey) ? (ferienAm(p.tag)?.name ?? null) : null}
         tag={p.tag}
         zeiten={stand.zeiten}
-        fehler={stand.fehler}
+        fehler={stand.fehler.map(() => "Kalender")}
       />
     );
   }
@@ -140,7 +140,7 @@ export default async function Seite({
       ferienHeute={null}
       tag={null}
       zeiten={[]}
-      fehler={stand.fehler}
+      fehler={stand.fehler.map(() => "Kalender")}
     />
   );
 }
