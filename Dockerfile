@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Node 24 bringt node:sqlite mit; weitere native Module braucht es nicht.
-FROM node:24-bookworm-slim AS base
+FROM node:25-bookworm-slim AS base
 
 # --- Abhängigkeiten ---
 FROM base AS deps
