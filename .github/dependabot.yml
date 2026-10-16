@@ -20,7 +20,8 @@ updates:
     directory: /
     schedule:
       interval: monthly
-    # Nur Node-LTS (gerade Hauptversionen) und keinen Sprung ohne Absicht.
+    # Keine Sprünge auf eine neue Node-Hauptversion ohne Absicht; der Wechsel auf
+    # die nächste LTS-Fassung geschieht von Hand.
     ignore:
       - dependency-name: node
         update-types: ["version-update:semver-major"]

@@ -89,13 +89,16 @@ termin.example.com {
 
 Änderungen an `buchung.env` brauchen keinen neuen Build, `docker compose up -d` genügt.
 Die Datenbank (SQLite) liegt im Volume `buchung_data`. Für eine Sicherung im laufenden
-Betrieb eine konsistente Kopie erzeugen und herausholen (die Datei allein zu kopieren
-reicht nicht, weil SQLite neue Daten zuerst in eine Nebendatei schreibt):
+Betrieb eine konsistente Kopie erzeugen lassen und direkt auf den Host schreiben (die
+Datei allein zu kopieren reicht nicht, weil SQLite neue Daten zuerst in eine Nebendatei
+schreibt). Im Container bleibt dabei keine Kopie zurück:
 
 ```bash
-docker compose exec buchung node -e "new (require('node:sqlite').DatabaseSync)('/data/buchung.db').exec(\"VACUUM INTO '/data/sicherung.db'\")"
-docker compose cp buchung:/data/sicherung.db ./sicherung-$(date +%F).db
+docker compose exec -T buchung node -e "const {DatabaseSync}=require('node:sqlite'),fs=require('node:fs');const z='/tmp/s-'+Date.now()+'.db';new DatabaseSync('/data/buchung.db').exec(\"VACUUM INTO '\"+z+\"'\");process.stdout.write(fs.readFileSync(z));fs.unlinkSync(z)" > sicherung-$(date +%F).db
 ```
+
+Sicherungen enthalten Personendaten und unterliegen denselben Löschfristen; alte
+Sicherungen deshalb nicht unbegrenzt aufbewahren.
 
 ## ICS-Links finden
 

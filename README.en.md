@@ -71,9 +71,10 @@ curl http://127.0.0.1:3000/gesund        # {"ok":true,...}
 
 A prebuilt image is available as `ghcr.io/villagio88/buchungstool`. Put a reverse proxy
 with HTTPS in front, e.g. Caddy (`reverse_proxy 127.0.0.1:3000`). Changes to
-`buchung.env` need no rebuild. For a consistent backup while running, use SQLite's
-`VACUUM INTO` (see the German README for the exact command) and copy the result out;
-copying the database file alone may miss recent writes.
+`buchung.env` need no rebuild. For a consistent backup while running, use the command
+in the German README (SQLite `VACUUM INTO`, streamed to the host, nothing left in the
+container); copying the database file alone may miss recent writes. Backups contain
+personal data, so don't keep them forever.
 
 ## Finding your ICS links
 
