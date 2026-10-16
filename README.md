@@ -152,6 +152,13 @@ Alle Einstellungen stehen kommentiert in [`buchung.env.example`](buchung.env.exa
 | `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_USER`, `MAIL_PASS` | Versand der Einladungen |
 | `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN` | Löschfristen |
 
+**Eigener Auftritt:** Logos und Schriften gehören nach `public/marke/`
+(`BEREICH_<NAME>_LOGO`, `BEREICH_<NAME>_SCHRIFTDATEI`, `BEREICH_<NAME>_SCHRIFT`). Mit dem
+fertigen Abbild genügt es, einen eigenen Ordner nach `/app/public/marke` einzuhängen.
+Weitere Pfade für einen Bereich gibt `BEREICH_<NAME>_ALIAS`, eigene Texte
+`BEREICH_<NAME>_HINWEIS_WEITERE` und `FUSSZEILE`. So bleibt die eigene Installation
+persönlich und lässt sich trotzdem mit jedem neuen Abbild aktualisieren.
+
 ## Betrieb
 
 - `GET /gesund` meldet Datenbank und Erreichbarkeit der Kalender, nur als Zahlen. Das

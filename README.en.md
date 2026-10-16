@@ -106,7 +106,10 @@ German). Key variables: `INHABER_NAME`, `SEITEN_URL` (required), `KALENDER` with
 `KALENDER_<NAME>_URL` and `_PUFFER`, `BEREICHE` with `BEREICH_<NAME>_NAME`, `_MAIL`,
 `_HINWEIS`, `_AKZENT`, `_LOGO`, `_WUNSCHZEITEN`, office hours `VON_UHR`, `BIS_UHR`,
 `ARBEITSTAGE`, `TZ`, SMTP `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_USER`, `MAIL_PASS`,
-deletion periods `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN`.
+deletion periods `LOESCHEN_IP_NACH_TAGEN`, `LOESCHEN_PERSONENDATEN_NACH_TAGEN`. Personal
+branding without forking: logos and fonts in `public/marke/` (mount your own folder at
+`/app/public/marke` when using the prebuilt image), `BEREICH_<NAME>_LOGO`, `_SCHRIFT`,
+`_SCHRIFTDATEI`, extra paths `_ALIAS`, texts `_HINWEIS_WEITERE` and `FUSSZEILE`.
 
 ## Operations and development
 

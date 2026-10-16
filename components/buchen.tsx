@@ -29,6 +29,10 @@ type MarkeDaten = {
   logo: string | null;
   logoAlt: string;
   akzent: string;
+  schrift: string | null;
+  schriftDatei: string | null;
+  hinweisWeitere: string;
+  fusszeile: string;
 };
 
 type Props = {
@@ -169,6 +173,7 @@ function markenStil(m: MarkeDaten): React.CSSProperties {
     "--akzent": m.akzent,
     "--akzent-flaeche": `color-mix(in srgb, ${m.akzent} 8%, white)`,
     "--akzent-rand": `color-mix(in srgb, ${m.akzent} 30%, white)`,
+    ...(m.schrift ? { fontFamily: `"${m.schrift}", system-ui, sans-serif` } : {}),
   } as React.CSSProperties;
 }
 
@@ -457,7 +462,7 @@ export function Buchen(props: Props) {
             </button>
           ))}
         </div>
-        <Fuss />
+        <Fuss text={props.marke.fusszeile} />
       </main>
     );
   }
@@ -515,6 +520,7 @@ export function Buchen(props: Props) {
               </p>
             ) : (
               <Zeitauswahl
+                hinweisWeitere={props.marke.hinweisWeitere}
                 zeiten={props.zeiten}
                 mitEmpfehlungen={props.mitEmpfehlungen}
                 gesperrt={props.fehler.length > 0}
@@ -532,7 +538,7 @@ export function Buchen(props: Props) {
           </div>
         </div>
 
-        <Fuss />
+        <Fuss text={props.marke.fusszeile} />
       </main>
     );
   }
@@ -593,7 +599,7 @@ export function Buchen(props: Props) {
           ) : null}
         </p>
       )}
-      <Fuss />
+      <Fuss text={props.marke.fusszeile} />
     </main>
   );
 }
@@ -631,13 +637,13 @@ function Kopf({ titel, bereichLabel, wunschText, marke }: {
   );
 }
 
-function Fuss() {
+function Fuss({ text }: { text: string }) {
   return (
     <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-5 text-[13px] text-neutral-400 dark:border-neutral-800 dark:text-neutral-500">
       <a href="/impressum" className="hover:underline">
         Impressum und Datenschutz
       </a>
-      <span>Buchungstool, Open Source</span>
+      <span>{text}</span>
     </footer>
   );
 }
@@ -762,8 +768,9 @@ function Monatsgitter({ jahr, monat, freieTage, wunschTage, ferientage, aktiverT
  * die keinen Arbeitsblock zerschneiden (Tagesbeginn, Mittag, Feierabend); alles andere liegt hinter einem Schalter. Wer eine bestimmte Zeit
  * braucht, kommt weiterhin an alle heran.
  */
-function Zeitauswahl({ zeiten, mitEmpfehlungen, gesperrt, warte, waehle }: {
+function Zeitauswahl({ zeiten, mitEmpfehlungen, gesperrt, warte, waehle, hinweisWeitere }: {
   zeiten: ZeitDaten[]; mitEmpfehlungen: boolean; gesperrt: boolean; warte: boolean;
+  hinweisWeitere: string;
   waehle: (z: ZeitDaten) => void;
 }) {
   // Zu als Ausgangslage: die Vorschläge oben sollen den Blick
@@ -850,9 +857,7 @@ function Zeitauswahl({ zeiten, mitEmpfehlungen, gesperrt, warte, waehle }: {
             <>
               {empfohlen.length > 0 && (
                 <p className="mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400">
-                  Diese Zeiten sind frei, liegen aber mitten in einem Arbeitsblock. Für
-                  wichtige Anliegen geht das; für alltägliche Fragen sind die Zeiten am
-                  Rand besser.
+                  {hinweisWeitere}
                 </p>
               )}
               <div className={`${empfohlen.length > 0 ? "mt-3" : ""} grid grid-cols-3 gap-2.5 sm:grid-cols-4`}>

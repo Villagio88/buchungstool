@@ -1,5 +1,13 @@
 # Änderungen
 
+## 0.3.0 (Oktober 2026)
+
+- Weitere Pfade je Bereich (`BEREICH_<NAME>_ALIAS`).
+- Eigene Schrift je Bereich aus `public/marke/` (`BEREICH_<NAME>_SCHRIFT`,
+  `BEREICH_<NAME>_SCHRIFTDATEI`).
+- Eigener Hinweis bei den weiteren Zeiten (`BEREICH_<NAME>_HINWEIS_WEITERE`) und
+  eigene Fusszeile (`FUSSZEILE`).
+
 ## 0.2.0 (Oktober 2026)
 
 - Datenbank über das in Node 24 eingebaute `node:sqlite` statt Prisma: weniger

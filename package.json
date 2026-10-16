@@ -2,7 +2,7 @@
   "name": "buchungstool",
   "description": "Selbst gehostete Terminbuchung, die mehrere ICS-Kalender verschiedener Anbieter zugleich berücksichtigt.",
   "license": "AGPL-3.0-only",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

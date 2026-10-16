@@ -107,6 +107,8 @@ export type Bereich = {
   /** Adresse, an die die Einladung geht. Bestimmt, in welchem Kalender der Termin landet. */
   mail: string;
   hinweis: string;
+  /** Weitere Pfade, unter denen der Bereich erreichbar ist (BEREICH_<NAME>_ALIAS). */
+  alias: string[];
 };
 
 /** Liste aus einer Umgebungsvariablen, durch Komma getrennt, ohne leere Teile. */
@@ -164,6 +166,7 @@ export const BEREICHE: Bereich[] = liste("BEREICHE", "termin")
       label: text(`BEREICH_${k}_NAME`, key.charAt(0).toUpperCase() + key.slice(1)),
       mail: text(`BEREICH_${k}_MAIL`, text("INHABER_MAIL", "")),
       hinweis: text(`BEREICH_${k}_HINWEIS`, ""),
+      alias: liste(`BEREICH_${k}_ALIAS`).filter((a) => SCHLUESSEL.test(a) && !RESERVIERT.has(a)),
     };
   })
   .filter((b) => {
@@ -179,7 +182,7 @@ export const BEREICHE: Bereich[] = liste("BEREICHE", "termin")
   });
 
 export function bereichAus(key: string): Bereich | null {
-  return BEREICHE.find((b) => b.key === key) ?? null;
+  return BEREICHE.find((b) => b.key === key || b.alias.includes(key)) ?? null;
 }
 
 /**
@@ -378,7 +381,28 @@ export type Marke = {
   logoAlt: string;
   /** Akzent als CSS-Farbe. Flächen und Rahmen leitet die Seite daraus ab. */
   akzent: string;
+  /** Name einer eigenen Schrift (BEREICH_<NAME>_SCHRIFT), sonst die Systemschrift. */
+  schrift: string | null;
+  /** Schriftdatei in public/marke/ (BEREICH_<NAME>_SCHRIFTDATEI), etwa eine .woff2. */
+  schriftDatei: string | null;
+  /** Hinweis über den weiteren, nicht empfohlenen Zeiten. */
+  hinweisWeitere: string;
+  /** Text rechts in der Fusszeile (FUSSZEILE). */
+  fusszeile: string;
 };
+
+const STANDARD_HINWEIS_WEITERE =
+  "Diese Zeiten sind frei, liegen aber mitten in einem Arbeitsblock. Für wichtige Anliegen geht das; für alltägliche Fragen sind die Zeiten am Rand besser.";
+
+/** Nur einfache Schriftnamen, damit aus der Umgebung kein beliebiges CSS entsteht. */
+function schriftName(roh: string): string | null {
+  return /^[A-Za-z0-9 -]{1,60}$/.test(roh) ? roh : null;
+}
+
+/** Nur Schriftdateien auf der eigenen Seite. */
+function schriftPfad(roh: string): string | null {
+  return /^\/[A-Za-z0-9._\/-]+\.(woff2|woff|ttf|otf)$/.test(roh) && !roh.includes("..") ? roh : null;
+}
 
 const STANDARD_AKZENT = "#3b82f6";
 
@@ -388,10 +412,25 @@ function farbe(roh: string): string {
 }
 
 export function marke(bereich: BereichKey | null | undefined): Marke {
-  if (!bereich) return { logo: null, logoAlt: "", akzent: STANDARD_AKZENT };
+  const fusszeile = text("FUSSZEILE", "Buchungstool, Open Source");
+  if (!bereich) {
+    return {
+      logo: null,
+      logoAlt: "",
+      akzent: STANDARD_AKZENT,
+      schrift: null,
+      schriftDatei: null,
+      hinweisWeitere: STANDARD_HINWEIS_WEITERE,
+      fusszeile,
+    };
+  }
   const k = envTeil(bereich);
   const logo = text(`BEREICH_${k}_LOGO`, "");
   return {
+    schrift: schriftName(text(`BEREICH_${k}_SCHRIFT`, "")),
+    schriftDatei: schriftPfad(text(`BEREICH_${k}_SCHRIFTDATEI`, "")),
+    hinweisWeitere: text(`BEREICH_${k}_HINWEIS_WEITERE`, STANDARD_HINWEIS_WEITERE),
+    fusszeile,
     // Nur Pfade auf der eigenen Seite, passend zur Content-Security-Policy.
     logo: logo.startsWith("/") && !logo.startsWith("//") ? logo : null,
     logoAlt: text(`BEREICH_${k}_LOGO_ALT`, ""),

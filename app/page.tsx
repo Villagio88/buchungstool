@@ -9,10 +9,22 @@ import {
   zeigtFerien,
   marke,
   type BereichKey,
+  type Marke,
 } from "@/lib/config";
 import { Buchen } from "@/components/buchen";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Lädt eine eigene Schrift des Bereichs aus public/marke/. Name und Pfad sind in
+ * lib/config.ts auf harmlose Zeichen beschränkt, deshalb ist das Einfügen als
+ * Stilregel unbedenklich.
+ */
+function SchriftStil({ marke: m }: { marke: Marke }) {
+  if (!m.schrift || !m.schriftDatei) return null;
+  const css = `@font-face{font-family:"${m.schrift}";src:url("${m.schriftDatei}");font-weight:100 900;font-display:swap;}`;
+  return <style>{css}</style>;
+}
 
 function schluessel(jahr: number, monat: number): string {
   return `${jahr}-${String(monat).padStart(2, "0")}`;
@@ -88,6 +100,8 @@ export default async function Seite({
       getMonat(j, m, mitAnfrage, bereichKey),
     ]);
     return (
+      <>
+      <SchriftStil marke={gemeinsam.marke} />
       <Buchen
         {...gemeinsam}
         jahr={j}
@@ -100,6 +114,7 @@ export default async function Seite({
         zeiten={stand.zeiten}
         fehler={stand.fehler.map(() => "Kalender")}
       />
+      </>
     );
   }
 
@@ -130,6 +145,8 @@ export default async function Seite({
   }
 
   return (
+    <>
+    <SchriftStil marke={gemeinsam.marke} />
     <Buchen
       {...gemeinsam}
       jahr={jahr}
@@ -142,5 +159,6 @@ export default async function Seite({
       zeiten={[]}
       fehler={stand.fehler.map(() => "Kalender")}
     />
+    </>
   );
 }
